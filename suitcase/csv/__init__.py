@@ -11,6 +11,7 @@ del get_versions
 # functions.
 #
 from collections import defaultdict
+import json
 
 
 def export(gen, filepath):
@@ -46,10 +47,11 @@ def export(gen, filepath):
                 filepath = f"{filepath}_{stream_name}_{doc['uid'][:8]}.csv"
                 files[doc['uid']] = open(filepath, 'w')
             elif name == 'event':
+                row = ', '.join(map(str, (doc['time'], *doc['data'].values())))
                 f = files[doc['descriptor']]
-                f.write(', '.join(doc['time'], *doc['data'].values()))
+                f.write(row)
     finally:
-        for f in files:
+        for f in files.values():
             f.close()
     with open(f"{filepath}_meta.json", 'w') as f:
         json.dump(meta, f)
