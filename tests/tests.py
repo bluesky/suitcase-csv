@@ -5,6 +5,7 @@ from ophyd.tests.conftest import hw
 from bluesky.plans import count
 import tempfile
 from suitcase.csv import export
+from .utils import generate_csv
 
 
 def test_export(RE, hw):
@@ -16,7 +17,8 @@ def test_export(RE, hw):
     RE.subscribe(collect)
     RE(count([hw.det]))
 
-    with tempfile.NamedTemporaryFile() as f:
+    with tempfile.NamedTemporaryFile(mode='w') as f:
         # We don't actually need f itself, just a filepath to template on.
+        generate_csv(f)
         filepaths = export(collector, f.name)
         print(filepaths)
