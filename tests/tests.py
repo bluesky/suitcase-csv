@@ -4,7 +4,7 @@ from bluesky.tests.conftest import RE
 from ophyd.tests.conftest import hw
 from bluesky.plans import count
 import tempfile
-from . import export
+from suitcase.csv import export
 
 
 def test_export(RE, hw):
