@@ -16,18 +16,29 @@ import json
 
 def export(gen, filepath):
     """
-    Export a stream of documents to CSV files.
+    Export a stream of documents to CSV file(s) and one JSON file of metadata.
 
     Creates {filepath}_meta.json and then {filepath}_{stream_name}.csv
     for every Event stream.
 
-    The structure of the json is:
+    The structure of the json is::
 
-    {'start': {...},
-     'descriptors':
-         {'<stream_name>': [{...}, {...}, ...],
-          ...},
-     'stop': {...}}
+        {'start': {...},
+        'descriptors':
+            {'<stream_name>': [{...}, {...}, ...],
+            ...},
+        'stop': {...}}
+
+    Parameters
+    ----------
+    gen : generator
+        expected to yield (name, document) pairs
+    filepath : str
+
+    Returns
+    -------
+    dest : tuple
+        filepaths of generated files
     """
     meta = {}  # to be exported as JSON at the end
     meta['descriptors'] = defaultdict(list)  # map stream_name to descriptors
@@ -36,16 +47,16 @@ def export(gen, filepath):
         for name, doc in gen:
             if name == 'start':
                 if 'start' in meta:
-                    raise RuntimeError("This exporter expects documents from one "
-                                    "run only.")
+                    raise RuntimeError("This exporter expects documents from "
+                                       "one run only.")
                 meta['start'] = doc
             elif name == 'stop':
                 meta['stop'] = doc
             elif name == 'descriptor':
                 stream_name = doc.get('name')
                 meta['descriptors'][stream_name].append(doc)
-                filepath = f"{filepath}_{stream_name}_{doc['uid'][:8]}.csv"
-                files[doc['uid']] = open(filepath, 'w')
+                filepath_ = f"{filepath}_{stream_name}_{doc['uid'][:8]}.csv"
+                files[doc['uid']] = open(filepath_, 'w')
             elif name == 'event':
                 row = ', '.join(map(str, (doc['time'], *doc['data'].values())))
                 f = files[doc['descriptor']]
@@ -55,6 +66,7 @@ def export(gen, filepath):
             f.close()
     with open(f"{filepath}_meta.json", 'w') as f:
         json.dump(meta, f)
+    return (f.name,) + tuple(f.name for f in files.values())
 #
 # def ingest(...):
 #     ...
