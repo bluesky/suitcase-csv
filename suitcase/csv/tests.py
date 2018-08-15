@@ -16,7 +16,7 @@ def test_export(RE, hw):
     RE.subscribe(collect)
     RE(count([hw.det]))
 
-    with tempfile.NamedTemporaryFile(mode='w+') as f:
-        export(collector, f.name)
-        f.seek(0)
-        print(f.read())
+    with tempfile.NamedTemporaryFile() as f:
+        # We don't actually need f itself, just a filepath to template on.
+        filepaths = export(collector, f.name)
+        print(filepaths)
