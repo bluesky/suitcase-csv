@@ -15,7 +15,7 @@ def test_export(RE, hw):
         collector.append((name, doc))
 
     RE.subscribe(collect)
-    RE(count([hw.det]))
+    RE(count([hw.det], 5))
 
     with tempfile.NamedTemporaryFile(mode='w') as f:
         # We don't actually need f itself, just a filepath to template on.
