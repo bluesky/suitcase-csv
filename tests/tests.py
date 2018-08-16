@@ -50,7 +50,7 @@ class TestRheology(unittest.TestCase):
              'time': 1534432676.1675735,
              'uid': 'eba6ce45-1f7c-457a-8c63-9d5db3374270', 'start': '4becc62f-8f0b-477f-a772-f1c66d6ca70b'}),
                        ('event', {
-                           'data': {'image': np.random.random((128, 128)).tolist()},
+                           'data': {'data1': np.random.random(128).tolist()},
                            'timestamps': {'image': 1534432660.8167932},
                            'time': 1534432660.8167932, 'uid': '4bff5f16-8183-4bfe-8984-7558d263a259',
                            'descriptor': 'eba6ce45-1f7c-457a-8c63-9d5db3374270', 'EDF_DataBlockID': '0.Image.Psd',
@@ -100,16 +100,16 @@ class TestRheology(unittest.TestCase):
         """
 
         # Generate initial checksum
-        pre_transform_checksum = hash_dict(self.header)
+        pre_transform_checksum = hash_object(self.header)
 
         # Transform forward/back
-        export_paths = suitcase.export(self.header)
-        args = export_paths
+        export_paths = suitcase.export(self.header, basename='test')
+        args = [export_paths]
         kwargs = {}
         header = suitcase.ingest(*args, **kwargs)
 
         # Generate final checksum
-        post_transform_checksum = hash_dict(header)
+        post_transform_checksum = hash_object(list(header))
 
         assert pre_transform_checksum == post_transform_checksum
 
@@ -128,8 +128,17 @@ def hash_file(path: str):
     return hashlib.md5(path).hexdigest()
 
 
-def hash_dict(d: dict) -> str:
-    return hashlib.md5(json.dumps(d, sort_keys=True)).hexdigest()
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj, 'to_dict'):
+            return obj.to_dict()
+        return json.JSONEncoder.default(self, obj)
+
+
+def hash_object(d: object) -> str:
+    return hashlib.md5(json.dumps(d, sort_keys=True, cls=JSONEncoder).encode('utf-8')).hexdigest()
+
+
 
 
 if __name__ == '__main__':

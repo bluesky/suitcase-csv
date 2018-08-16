@@ -1,7 +1,7 @@
-from ._version import get_versions
-
-__version__ = get_versions()['version']
-del get_versions
+# from ._version import get_versions
+#
+# __version__ = get_versions()['version']
+# del get_versions
 
 # Suitcase subpackages must follow strict naming and interface conventions. The
 # public API should include some subset of the following. Any functions not
@@ -14,7 +14,10 @@ from collections import defaultdict
 import itertools
 import json
 import pandas
-from typing import Iterator, Tuple, List
+from typing import Iterator, Tuple, List, Generator
+import uuid
+import time
+import os
 
 
 def export(gen: Iterator[Tuple[str, dict]], basename: str) -> List[str]:
@@ -68,11 +71,13 @@ def export(gen: Iterator[Tuple[str, dict]], basename: str) -> List[str]:
                 files[doc['uid']] = open(filepath, 'w+')
             elif name == 'event':
                 for field in doc['data']:
-                    streamdata[doc['descriptor']]['field'] = streamdata[doc['descriptor']].get(field, []).append(
-                        doc['data']['field'])
+                    if not doc['descriptor'] in streamdata: streamdata[doc['descriptor']] = {}
+                    if not field in streamdata[doc['descriptor']]: streamdata[doc['descriptor']][field] = []
+                    streamdata[doc['descriptor']][field] = streamdata[doc['descriptor']].get(field, []).append(
+                        doc['data'][field])
                     indices.append(doc['time'])
             elif name == 'bulk_event':
-                streamdata[doc['descriptor']] = doc['data']
+                streamdata[doc['descriptor']] = list(doc['data'].values())[0]
 
         for uid in files:
             df = pandas.DataFrame(streamdata[uid], index=indices or None)
@@ -84,13 +89,51 @@ def export(gen: Iterator[Tuple[str, dict]], basename: str) -> List[str]:
     with open(f"{basename}_meta.json", 'w') as f:
         json.dump(meta, f)
     return [f.name for f in files.values()]
-#
-# def ingest(...):
-#     ...
-#
-#
-# def reflect(...):
-#     ...
-#
-#
-# handlers = []
+
+
+def ingest(paths: Iterator[str], *args, **kwargs) -> Generator[Tuple[str, dict], None, None]:
+    # Generate start doc
+    startuuid = str(uuid.uuid4())
+    start = {'time': time.time(),
+             'uid': startuuid,
+             }
+    yield 'start', start
+
+    for path in paths:
+        df = pandas.read_csv(path, *args, **kwargs)
+
+        # Generate descriptor doc
+        descriptoruuid = str(uuid.uuid4())
+        descriptor = {'data_keys':
+                          {'data': {'source': 'file', 'dtype': 'array', 'shape': df.shape}, },
+                      'time': time.time(),
+                      'uid': descriptoruuid,
+                      'start': startuuid,
+                      }
+        yield 'descriptor', descriptor
+
+        # Generate bulk_event doc
+        mtime = os.path.getmtime(path)
+        bulk_event = {'data': {'data': df},
+                      'timestamps': {'data': mtime, },
+                      'time': mtime,
+                      'uid': str(uuid.uuid4()),
+                      'descriptor': descriptoruuid,
+                      }
+
+        yield 'bulk_event', bulk_event
+
+    # Generate stop doc
+    stop = {'exit_status': 'success',
+            'time': time.time(),
+            'uid': str(uuid.uuid4()),
+            'start': startuuid,
+            }
+    yield 'stop', stop
+
+
+if __name__ == "__main__":
+    path = '/home/rp/data/xas/Fe_L_DB_29733.txt'
+    skiprows = 15
+    header = 0
+    print(list(ingest([path], skiprows=skiprows, header=header, sep='\t')))
