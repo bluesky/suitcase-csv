@@ -2,6 +2,7 @@
 # the documentation) but not necessarily required for _using_ it.
 codecov
 coverage
+bluesky
 flake8
 pytest
 sphinx
@@ -9,5 +10,6 @@ sphinx
 ipython
 matplotlib
 numpydoc
+ophyd
 sphinx-copybutton
 sphinx_rtd_theme
