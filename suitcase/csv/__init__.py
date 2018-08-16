@@ -1,7 +1,7 @@
 from ._version import get_versions
+
 __version__ = get_versions()['version']
 del get_versions
-
 
 # Suitcase subpackages must follow strict naming and interface conventions. The
 # public API should include some subset of the following. Any functions not
@@ -13,9 +13,11 @@ del get_versions
 from collections import defaultdict
 import itertools
 import json
+import pandas
+from typing import Iterator, Tuple, List
 
 
-def export(gen, filepath):
+def export(gen: Iterator[Tuple[str, dict]], basename: str) -> List[str]:
     """
     Export a stream of documents to CSV file(s) and one JSON file of metadata.
 
@@ -29,6 +31,8 @@ def export(gen, filepath):
             {'<stream_name>': [{...}, {...}, ...],
             ...},
         'stop': {...}}
+
+    Both event and bulk_event are supported, though only independently.
 
     Parameters
     ----------
@@ -46,6 +50,8 @@ def export(gen, filepath):
     files = {}  # map descriptor uid to file handle of CSV file
     desc_counters = defaultdict(itertools.count)
     try:
+        streamdata = {}
+        indices = []
         for name, doc in gen:
             if name == 'start':
                 if 'start' in meta:
@@ -57,18 +63,27 @@ def export(gen, filepath):
             elif name == 'descriptor':
                 stream_name = doc.get('name')
                 meta['descriptors'][stream_name].append(doc)
-                filepath_ = f"{filepath}_{stream_name}_{next(desc_counters[doc['uid']])}.csv"
-                files[doc['uid']] = open(filepath_, 'w+')
+                # Open a file object for the stream
+                filepath = f"{basename}_{stream_name}_{next(desc_counters[doc['uid']])}.csv"
+                files[doc['uid']] = open(filepath, 'w+')
             elif name == 'event':
-                row = ', '.join(map(str, (doc['time'], *doc['data'].values())))
-                f = files[doc['descriptor']]
-                f.write(f'{row}\n')
+                for field in doc['data']:
+                    streamdata[doc['descriptor']]['field'] = streamdata[doc['descriptor']].get(field, []).append(
+                        doc['data']['field'])
+                    indices.append(doc['time'])
+            elif name == 'bulk_event':
+                streamdata[doc['descriptor']] = doc['data']
+
+        for uid in files:
+            df = pandas.DataFrame(streamdata[uid], index=indices or None)
+            df.to_csv(files[uid])
+
     finally:
         for f in files.values():
             f.close()
-    with open(f"{filepath}_meta.json", 'w') as f:
+    with open(f"{basename}_meta.json", 'w') as f:
         json.dump(meta, f)
-    return (f.name,) + tuple(f.name for f in files.values())
+    return [f.name for f in files.values()]
 #
 # def ingest(...):
 #     ...
