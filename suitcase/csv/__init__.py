@@ -11,6 +11,7 @@ del get_versions
 # functions.
 #
 from collections import defaultdict
+import itertools
 import json
 
 
@@ -43,6 +44,7 @@ def export(gen, filepath):
     meta = {}  # to be exported as JSON at the end
     meta['descriptors'] = defaultdict(list)  # map stream_name to descriptors
     files = {}  # map descriptor uid to file handle of CSV file
+    desc_counters = defaultdict(itertools.count)
     try:
         for name, doc in gen:
             if name == 'start':
@@ -55,8 +57,8 @@ def export(gen, filepath):
             elif name == 'descriptor':
                 stream_name = doc.get('name')
                 meta['descriptors'][stream_name].append(doc)
-                filepath_ = f"{filepath}_{stream_name}_{doc['uid'][:8]}.csv"
-                files[doc['uid']] = open(filepath_, 'w')
+                filepath_ = f"{filepath}_{stream_name}_{next(desc_counters[doc['uid']])}.csv"
+                files[doc['uid']] = open(filepath_, 'w+')
             elif name == 'event':
                 row = ', '.join(map(str, (doc['time'], *doc['data'].values())))
                 f = files[doc['descriptor']]
