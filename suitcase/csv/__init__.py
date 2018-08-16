@@ -62,7 +62,7 @@ def export(gen, filepath):
             elif name == 'event':
                 row = ', '.join(map(str, (doc['time'], *doc['data'].values())))
                 f = files[doc['descriptor']]
-                f.write(row)
+                f.write(f'{row}\n')
     finally:
         for f in files.values():
             f.close()
