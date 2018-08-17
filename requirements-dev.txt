@@ -5,6 +5,7 @@ coverage
 bluesky
 flake8
 pytest
+fabio
 sphinx
 # These are dependencies of various sphinx extensions for documentation.
 ipython
