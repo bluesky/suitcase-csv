@@ -3,8 +3,6 @@
 import ophyd
 
 ophyd.set_cl('caproto')
-from bluesky.tests.conftest import RE
-from ophyd.tests.conftest import hw
 from bluesky.plans import count
 import tempfile
 from suitcase.csv import export
