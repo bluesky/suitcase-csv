@@ -85,7 +85,7 @@ class TestRheology(unittest.TestCase):
         kwargs = {}
 
         header = suitcase.ingest(*args, **kwargs)
-        export_paths = suitcase.export(header, edfimage.EdfImage)
+        export_paths = suitcase.export(header, basename='test')
 
         # Generate final checksum
         post_transform_checksum = hash_files(export_paths)
@@ -94,8 +94,8 @@ class TestRheology(unittest.TestCase):
 
     def test_reverse_rheology(self):
         """
-        Translate from an Event Model header to a native format; check that reversing the translation gives back an Event
-        Model header with the same checksum.
+        Translate from an Event Model header to a native format; check that reversing the translation gives back an
+        Event Model header with the same checksum.
 
         """
 
@@ -137,8 +137,6 @@ class JSONEncoder(json.JSONEncoder):
 
 def hash_object(d: object) -> str:
     return hashlib.md5(json.dumps(d, sort_keys=True, cls=JSONEncoder).encode('utf-8')).hexdigest()
-
-
 
 
 if __name__ == '__main__':

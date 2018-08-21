@@ -45,7 +45,7 @@ def export(gen: Iterator[Tuple[str, dict]], basename: str) -> List[str]:
 
     Returns
     -------
-    dest : tuple
+    dest : List[str]
         filepaths of generated files
     """
     meta = {}  # to be exported as JSON at the end
