@@ -1,0 +1,12 @@
+[run]
+branch = true
+source =
+    suitcase.csv
+omit = suitcase/csv/_version.py
+
+[report]
+exclude_lines =
+    raise NotImplemented
+    def __str__
+    def __repr__
+    if __name__ == .__main__.:
