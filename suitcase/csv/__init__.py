@@ -1,8 +1,3 @@
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
-
-
 # Suitcase subpackages must follow strict naming and interface conventions. The
 # public API should include some subset of the following. Any functions not
 # implemented should be omitted, rather than included and made to raise
@@ -13,6 +8,9 @@ del get_versions
 from collections import defaultdict
 import itertools
 import json
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 
 def export(gen, filepath):
@@ -57,7 +55,8 @@ def export(gen, filepath):
             elif name == 'descriptor':
                 stream_name = doc.get('name')
                 meta['descriptors'][stream_name].append(doc)
-                filepath_ = f"{filepath}_{stream_name}_{next(desc_counters[doc['uid']])}.csv"
+                filepath_ = (f"{filepath}_{stream_name}_"
+                             f"{next(desc_counters[doc['uid']])}.csv")
                 files[doc['uid']] = open(filepath_, 'w+')
             elif name == 'event':
                 row = ', '.join(map(str, (doc['time'], *doc['data'].values())))
