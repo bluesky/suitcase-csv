@@ -8,14 +8,13 @@
 from collections import defaultdict
 import itertools
 import json
-import pandas
-#from ._version import get_versions
+from ._version import get_versions
 
-#__version__ = get_versions()['version']
-#del get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 
-def export(gen, filepath, **kwargs):
+def export(gen, filepath):
     """
     Export a stream of documents to CSV file(s) and one JSON file of metadata.
 
@@ -36,13 +35,7 @@ def export(gen, filepath, **kwargs):
     ----------
     gen : generator
         expected to yield (name, document) pairs
-
     filepath : str
-        the filepath and filename suffix to use in the output files.
-
-    **kwargs : kwargs
-        kwargs to be passed to pandas.Dataframe.to_csv, NOTE: header and 'mode'
-        kwargs are not supported as they have default values.
 
     Returns
     -------
@@ -53,14 +46,14 @@ def export(gen, filepath, **kwargs):
     meta['descriptors'] = defaultdict(list)  # map stream_name to descriptors
     files = {}  # map descriptor uid to file handle of CSV file
     desc_counters = defaultdict(itertools.count)
-    has_header = set()  # a set of uids indicating if the file has a header
+    has_header = set() # a set of uids indicating if the file has a header
 
     if 'header' in kwargs or 'mode' in kwargs:
         raise IllegalArgumentError('`header` and `mode` are set by default'+
                                    ' and can not be passed in via keyword'+
                                    'arguments')
 
-    try:
+try:
         for name, doc in gen:
             if name == 'start':
                 if 'start' in meta:
@@ -90,13 +83,9 @@ def export(gen, filepath, **kwargs):
                                   **kwargs)
                 has_header.add(doc['descriptor'])
 
-    finally:
+     finally:
         for f in files.values():
             f.close()
     with open(f"{filepath}_meta.json", 'w') as f:
         json.dump(meta, f)
     return (f.name,) + tuple(f.name for f in files.values())
-
-
-class IllegalArgumentError(ValueError):
-    pass
