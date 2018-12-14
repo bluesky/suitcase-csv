@@ -8,13 +8,14 @@
 from collections import defaultdict
 import itertools
 import json
+import pandas
 from ._version import get_versions
 
 __version__ = get_versions()['version']
 del get_versions
 
 
-def export(gen, filepath):
+def export(gen, filepath, **kwargs):
     """
     Export a stream of documents to CSV file(s) and one JSON file of metadata.
 
@@ -35,7 +36,14 @@ def export(gen, filepath):
     ----------
     gen : generator
         expected to yield (name, document) pairs
+
     filepath : str
+        the filepath and filename suffix to use in the output files.
+
+    **kwargs : kwargs
+        kwargs to be passed to pandas.Dataframe.to_csv, NOTE: 'header',
+        'index_label' and 'mode' kwargs are not supported as they have default
+        values.
 
     Returns
     -------
@@ -46,14 +54,14 @@ def export(gen, filepath):
     meta['descriptors'] = defaultdict(list)  # map stream_name to descriptors
     files = {}  # map descriptor uid to file handle of CSV file
     desc_counters = defaultdict(itertools.count)
-    has_header = set() # a set of uids indicating if the file has a header
+    has_header = set()  # a set of uids indicating if the file has a header
 
-    if 'header' in kwargs or 'mode' in kwargs:
-        raise IllegalArgumentError('`header` and `mode` are set by default'+
-                                   ' and can not be passed in via keyword'+
-                                   'arguments')
+    if 'header' in kwargs or 'mode' in kwargs or 'index_label' in kwargs:
+        raise IllegalArgumentError('`header` `inex_label` and `mode` are set' +
+                                   ' by default and can not be passed in via' +
+                                   ' keyword arguments')
 
-try:
+    try:
         for name, doc in gen:
             if name == 'start':
                 if 'start' in meta:
@@ -69,9 +77,9 @@ try:
                              f"{next(desc_counters[doc['uid']])}.csv")
                 files[doc['uid']] = open(filepath_, 'w+')
             elif name == 'event' or name == 'bulk_event':
-            #NOTE: this also works for bulk_events, it relies on
-            # doc['data']['some_key'] and doc['time'] both being either a value
-            # or a list of the same length.
+                # NOTE: this also works for bulk_events, it relies on
+                # doc['data']['some_key'] and doc['time'] both being either a
+                # value or a list of the same length.
                 if name == 'event':
                     index = [doc['time']]
                 else:
@@ -80,12 +88,17 @@ try:
 
                 event_data.to_csv(files[doc['descriptor']], mode='a',
                                   header=doc['descriptor'] not in has_header,
-                                  **kwargs)
+                                  index_label='time', **kwargs)
                 has_header.add(doc['descriptor'])
 
-     finally:
+    finally:
         for f in files.values():
             f.close()
     with open(f"{filepath}_meta.json", 'w') as f:
         json.dump(meta, f)
     return (f.name,) + tuple(f.name for f in files.values())
+
+
+class IllegalArgumentError(ValueError):
+    # This class is just included to make it easier to deal with errors later
+    pass

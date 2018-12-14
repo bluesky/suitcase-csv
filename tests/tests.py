@@ -5,6 +5,7 @@ import json
 import tempfile
 from suitcase.csv import export
 import pandas
+from pandas.util.testing import assert_frame_equal
 import numpy as np
 
 
@@ -31,10 +32,22 @@ def test_export(RE, hw):
 
     docs = (doc for name, doc in collector)
     start, descriptor, *events, stop = docs
+
+    expected = {}
+    expected_dict = {'data': {'det': []}, 'time': []}
+    for event in events:
+        expected_dict['data']['det'].append(event['data']['det'])
+        expected_dict['time'].append(event['time'])
+
+    expected['events'] = pandas.DataFrame(expected_dict['data'],
+                                          index=expected_dict['time'])
+    expected['events'].index.name = 'time'
+
     with open(meta) as f:
         actual = json.load(f)
-    expected = {'start': start, 'stop': stop, 'descriptors': [descriptor]}
+    expected.update({'start': start, 'stop': stop,
+                     'descriptors': [descriptor]})
+    actual['events'] = pandas.read_csv(csv, index_col=0)
     assert actual.keys() == expected.keys()
-    table = pandas.read_csv(csv, header=None)
     assert actual['stop'] == expected['stop']
-    assert table.shape == (5, 2)
+    assert_frame_equal(expected['events'], actual['events'])
