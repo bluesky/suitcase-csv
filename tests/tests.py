@@ -45,9 +45,21 @@ def test_export(RE, hw):
 
     with open(meta) as f:
         actual = json.load(f)
+    # This next section is used to convert lists to tuples for the assert below
+    for dims in actual['start']['hints']['dimensions']:
+        new_dims = []
+        for dim in dims:
+            if type(dim) is list:
+                new_dims.append(tuple(dim))
+            else:
+                new_dims.append(dim)
+        actual['start']['hints']['dimensions'] = [tuple(new_dims)]
+
     expected.update({'start': start, 'stop': stop,
-                     'descriptors': [descriptor]})
+                     'descriptors': {'primary': [descriptor]}})
     actual['events'] = pandas.read_csv(csv, index_col=0)
     assert actual.keys() == expected.keys()
+    assert actual['start'] == expected['start']
+    assert actual['descriptors'] == expected['descriptors']
     assert actual['stop'] == expected['stop']
     assert_frame_equal(expected['events'], actual['events'])

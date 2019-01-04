@@ -41,9 +41,7 @@ def export(gen, filepath, **kwargs):
         the filepath and filename suffix to use in the output files.
 
     **kwargs : kwargs
-        kwargs to be passed to pandas.Dataframe.to_csv, NOTE: 'header',
-        'index_label' and 'mode' kwargs are not supported as they have default
-        values.
+        kwargs to be passed to pandas.Dataframe.to_csv.
 
     Returns
     -------
@@ -56,10 +54,10 @@ def export(gen, filepath, **kwargs):
     desc_counters = defaultdict(itertools.count)
     has_header = set()  # a set of uids indicating if the file has a header
 
-    if 'header' in kwargs or 'mode' in kwargs or 'index_label' in kwargs:
-        raise IllegalArgumentError('`header` `inex_label` and `mode` are set' +
-                                   ' by default and can not be passed in via' +
-                                   ' keyword arguments')
+    kwargs.setdefault('header', True)
+    initial_header_kwarg = kwargs['header']  # used later to set the headers
+    kwargs.setdefault('index_label', 'time')
+    kwargs.setdefault('mode', 'a')
 
     try:
         for name, doc in gen:
@@ -71,7 +69,7 @@ def export(gen, filepath, **kwargs):
             elif name == 'stop':
                 meta['stop'] = doc
             elif name == 'descriptor':
-                stream_name = doc['name']
+                stream_name = doc.get('name')
                 meta['descriptors'][stream_name].append(doc)
                 filepath_ = (f"{filepath}_{stream_name}_"
                              f"{next(desc_counters[doc['uid']])}.csv")
@@ -86,9 +84,10 @@ def export(gen, filepath, **kwargs):
                     index = doc['time']
                 event_data = pandas.DataFrame(doc['data'], index=index)
 
-                event_data.to_csv(files[doc['descriptor']], mode='a',
-                                  header=doc['descriptor'] not in has_header,
-                                  index_label='time', **kwargs)
+                if initial_header_kwarg:
+                    kwargs['header'] = doc['descriptor'] not in has_header
+
+                event_data.to_csv(files[doc['descriptor']], **kwargs)
                 has_header.add(doc['descriptor'])
 
     finally:
@@ -97,8 +96,3 @@ def export(gen, filepath, **kwargs):
     with open(f"{filepath}_meta.json", 'w') as f:
         json.dump(meta, f)
     return (f.name,) + tuple(f.name for f in files.values())
-
-
-class IllegalArgumentError(ValueError):
-    # This class is just included to make it easier to deal with errors later
-    pass
