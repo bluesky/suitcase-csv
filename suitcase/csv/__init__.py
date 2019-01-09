@@ -9,6 +9,7 @@ from collections import defaultdict
 import itertools
 import json
 import pandas
+import event_model
 from ._version import get_versions
 
 __version__ = get_versions()['version']
@@ -29,8 +30,6 @@ def export(gen, filepath, **kwargs):
             {'<stream_name>': [{...}, {...}, ...],
             ...},
         'stop': {...}}
-
-    Both event and bulk_event are supported, though only independently.
 
     Parameters
     ----------
@@ -74,21 +73,29 @@ def export(gen, filepath, **kwargs):
                 filepath_ = (f"{filepath}_{stream_name}_"
                              f"{next(desc_counters[doc['uid']])}.csv")
                 files[doc['uid']] = open(filepath_, 'w+')
-            elif name == 'event' or name == 'bulk_event':
-                # NOTE: this also works for bulk_events, it relies on
-                # doc['data']['some_key'] and doc['time'] both being either a
-                # value or a list of the same length.
-                if name == 'event':
-                    index = [doc['time']]
+            elif (name == 'event' or name == 'bulk_event' or
+                  name == 'event_page'):
+                if name == 'event':  # convert event to event_page
+                    event_page = event_model.pack_event_page(doc)
+                elif name == 'bulk_event':  # convert bulk_event to event_page
+                    event_page = event_model.bulk_events_to_event_pages(doc)
                 else:
-                    index = doc['time']
-                event_data = pandas.DataFrame(doc['data'], index=index)
+                    event_page = doc
 
-                if initial_header_kwarg:
-                    kwargs['header'] = doc['descriptor'] not in has_header
+                if not all(event_page['filled'].values()):
+                    # check that all event_page data is filled
+                    raise UnfilledDataException('some of the data is unfilled')
+                else:
+                    data_dict = event_page['data']
+                    data_dict['seq_num'] = event_page['seq_num']
+                    event_data = pandas.DataFrame(data_dict,
+                                                  index=event_page['time'])
 
-                event_data.to_csv(files[doc['descriptor']], **kwargs)
-                has_header.add(doc['descriptor'])
+                    if initial_header_kwarg:
+                        kwargs['header'] = doc['descriptor'] not in has_header
+
+                    event_data.to_csv(files[doc['descriptor']], **kwargs)
+                    has_header.add(doc['descriptor'])
 
     finally:
         for f in files.values():
@@ -96,3 +103,8 @@ def export(gen, filepath, **kwargs):
     with open(f"{filepath}_meta.json", 'w') as f:
         json.dump(meta, f)
     return (f.name,) + tuple(f.name for f in files.values())
+
+
+class UnfilledDataException(Exception):
+    """raised when unfilled data is found"""
+    pass

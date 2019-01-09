@@ -34,9 +34,10 @@ def test_export(RE, hw):
     start, descriptor, *events, stop = docs
 
     expected = {}
-    expected_dict = {'data': {'det': []}, 'time': []}
+    expected_dict = {'data': {'det': [], 'seq_num': []}, 'time': []}
     for event in events:
         expected_dict['data']['det'].append(event['data']['det'])
+        expected_dict['data']['seq_num'].append(event['seq_num'])
         expected_dict['time'].append(event['time'])
 
     expected['events'] = pandas.DataFrame(expected_dict['data'],
