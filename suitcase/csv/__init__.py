@@ -75,27 +75,31 @@ def export(gen, filepath, **kwargs):
                 files[doc['uid']] = open(filepath_, 'w+')
             elif (name == 'event' or name == 'bulk_event' or
                   name == 'event_page'):
-                if name == 'event':  # convert event to event_page
-                    event_page = event_model.pack_event_page(doc)
-                elif name == 'bulk_event':  # convert bulk_event to event_page
-                    event_page = event_model.bulk_events_to_event_pages(doc)
-                else:
-                    event_page = doc
+                if name == 'event':  # convert event to an event_pages list
+                    event_pages = [event_model.pack_event_page(doc)]
+                elif name == 'bulk_event':  # convert bulk_event to event_pages
+                    event_pages = event_model.bulk_events_to_event_pages(doc)
+                else:  # convert an event_page to an event_pages list.
+                    event_pages = [doc]
 
-                if not all(event_page['filled'].values()):
-                    # check that all event_page data is filled
-                    raise UnfilledDataException('some of the data is unfilled')
-                else:
-                    data_dict = event_page['data']
-                    data_dict['seq_num'] = event_page['seq_num']
-                    event_data = pandas.DataFrame(data_dict,
-                                                  index=event_page['time'])
+                for event_page in event_pages:
+                    if not all(event_page['filled'].values()):
+                        # check that all event_page data is filled
+                        raise UnfilledDataException('some of the data is' +
+                                                    ' unfilled')
+                    else:
+                        data_dict = event_page['data']
+                        data_dict['seq_num'] = event_page['seq_num']
+                        event_data = pandas.DataFrame(data_dict,
+                                                      index=event_page['time'])
 
-                    if initial_header_kwarg:
-                        kwargs['header'] = doc['descriptor'] not in has_header
+                        if initial_header_kwarg:
+                            kwargs['header'] = event_page['descriptor'] \
+                                not in has_header
 
-                    event_data.to_csv(files[doc['descriptor']], **kwargs)
-                    has_header.add(doc['descriptor'])
+                        event_data.to_csv(files[event_page['descriptor']],
+                                          **kwargs)
+                        has_header.add(event_page['descriptor'])
 
     finally:
         for f in files.values():
