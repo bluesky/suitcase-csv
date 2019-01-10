@@ -85,13 +85,18 @@ def export(gen, filepath, **kwargs):
                 for event_page in event_pages:
                     if not all(event_page['filled'].values()):
                         # check that all event_page data is filled
-                        raise UnfilledDataException('some of the data is' +
-                                                    ' unfilled')
+                        unfilled_data = []
+                        for field in event_page['filled']:
+                            if not event_page['filled'][field]:
+                                unfilled_data.append(field)
+                        raise UnfilledData('unfilled data found in'
+                                           '{}. Try passing the parameter '
+                                           '"gen" through "event_model.filler"'
+                                           ' first'.format(unfilled_data))
                     else:
-                        data_dict = event_page['data']
-                        data_dict['seq_num'] = event_page['seq_num']
-                        event_data = pandas.DataFrame(data_dict,
+                        event_data = pandas.DataFrame(event_page['data'],
                                                       index=event_page['time'])
+                        event_data['seq_num'] = event_page['seq_num']
 
                         if initial_header_kwarg:
                             kwargs['header'] = event_page['descriptor'] \
@@ -109,6 +114,6 @@ def export(gen, filepath, **kwargs):
     return (f.name,) + tuple(f.name for f in files.values())
 
 
-class UnfilledDataException(Exception):
+class UnfilledData(Exception):
     """raised when unfilled data is found"""
     pass
