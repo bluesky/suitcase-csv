@@ -89,9 +89,13 @@ def export(gen, filepath, **kwargs):
                         for field in event_page['filled']:
                             if not event_page['filled'][field]:
                                 unfilled_data.append(field)
+                        # Note: As of this writing, this is a slightly
+                        # aspirational error message, as event_model.Filler has
+                        # not been merged yet. May need to be revisited if it
+                        # is renamed or kept elsewhere in the end.
                         raise UnfilledData('unfilled data found in'
                                            '{}. Try passing the parameter '
-                                           '"gen" through "event_model.filler"'
+                                           '"gen" through "event_model.Filler"'
                                            ' first'.format(unfilled_data))
                     else:
                         event_data = pandas.DataFrame(event_page['data'],
