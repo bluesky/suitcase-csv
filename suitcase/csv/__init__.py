@@ -83,11 +83,11 @@ def export(gen, filepath, **kwargs):
                     event_pages = [doc]
 
                 for event_page in event_pages:
-                    if not all(event_page['filled'].values()):
-                        # check that all event_page data is filled
+                    if not all(map(all, event_page['filled'].values())):
+                        # check that all event_page data is filled.
                         unfilled_data = []
                         for field in event_page['filled']:
-                            if not event_page['filled'][field]:
+                            if not all(event_page['filled'][field]):
                                 unfilled_data.append(field)
                         # Note: As of this writing, this is a slightly
                         # aspirational error message, as event_model.Filler has
