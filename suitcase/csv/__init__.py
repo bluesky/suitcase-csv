@@ -93,10 +93,10 @@ def export(gen, filepath, **kwargs):
                         # aspirational error message, as event_model.Filler has
                         # not been merged yet. May need to be revisited if it
                         # is renamed or kept elsewhere in the end.
-                        raise UnfilledData('unfilled data found in'
-                                           '{}. Try passing the parameter '
-                                           '"gen" through "event_model.Filler"'
-                                           ' first'.format(unfilled_data))
+                        raise UnfilledData("unfilled data found in "
+                                           "{!r}. Try passing the parameter "
+                                           "`gen` through `event_model.Filler`"
+                                           " first.".format(unfilled_data))
                     else:
                         event_data = pandas.DataFrame(event_page['data'],
                                                       index=event_page['time'])
