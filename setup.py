@@ -9,7 +9,7 @@ import versioneer
 # and/or pip.
 if sys.version_info < (3, 6):
     error = """
-suitcase.csv does not support Python {0}.
+suitcase.Csv does not support Python {0}.
 Python 3.6 and above is required. Check your Python version like so:
 
 python3 --version
@@ -37,7 +37,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     long_description=readme,
-    packages=['suitcase.csv'],
+    packages=['suitcase.Csv'],
     entry_points={
         'console_scripts': [
             # 'some.module:some_function',
@@ -45,7 +45,7 @@ setup(
         },
     include_package_data=True,
     package_data={
-        'suitcase.csv': [
+        'suitcase.Csv': [
             # When adding files here, remember to update MANIFEST.in as well,
             # or else they will not be included in the distribution on PyPI!
             # 'path/to/data_file',
