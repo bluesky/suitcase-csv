@@ -1,4 +1,4 @@
-from . import export
+from suitcase.csv import export
 import event_model
 import numpy
 import pandas
