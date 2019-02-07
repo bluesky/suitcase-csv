@@ -255,11 +255,10 @@ class Serializer(event_model.DocumentRouter):
             event_data['seq_num'] = doc['seq_num']
 
             if self._initial_header_kwarg:
-                self._kwargs['header'] = doc['descriptor'
-                                             ] not in self._has_header
+                self._kwargs['header'] = streamname not in self._has_header
 
             event_data.to_csv(self._files[streamname], **self._kwargs)
-            self._has_header.add(doc['descriptor'])
+            self._has_header.add(streamname)
 
     def close(self):
         '''Close all of the files opened by this Serializer.
