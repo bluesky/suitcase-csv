@@ -67,17 +67,17 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'suitcase.Csv'
-copyright = 'suitcase.Csv Contributors'
-author = 'suitcase.Csv Contributors'
+project = 'suitcase.csv'
+copyright = 'suitcase.csv Contributors'
+author = 'suitcase.csv Contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-import suitcase.Csv
+import suitcase.csv
 # The short X.Y version.
-version = suitcase.Csv.__version__
+version = suitcase.csv.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 
