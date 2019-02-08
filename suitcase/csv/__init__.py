@@ -260,5 +260,4 @@ class Serializer(event_model.DocumentRouter):
     def close(self):
         '''Close all of the files opened by this Serializer.
         '''
-        for stream in self._files:
-            self._files[stream].close()
+        self.manager.close()
