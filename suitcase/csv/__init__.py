@@ -150,7 +150,7 @@ class Serializer(event_model.DocumentRouter):
             self.manager = directory
 
         self._streamnames = {}  # maps descriptor uids to stream_names
-        self._files = {}  # maps stream_name to file lists
+        self._files = {}  # maps stream_name to file
         self._file_prefix = file_prefix
         self._templated_file_prefix = ''
         self._start_found = False
@@ -260,5 +260,4 @@ class Serializer(event_model.DocumentRouter):
     def close(self):
         '''Close all of the files opened by this Serializer.
         '''
-        for stream in self._files:
-            self._files[stream].close()
+        self.manager.close()
