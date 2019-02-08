@@ -69,10 +69,11 @@ def test_export(tmp_path, example_data):
     expected_dict = create_expected(collector)
     artifacts = export(collector, tmp_path, file_prefix='')
 
-    for filename in artifacts['stream_data']:
-        streamname = str(filename).split('/')[-1].split('.')[0]
+    if 'stream_data' in artifacts.keys():
+        for filename in artifacts['stream_data']:
+            streamname = str(filename).split('/')[-1].split('.')[0]
 
-        actual = pandas.read_csv(filename)
-        expected = expected_dict[streamname][list(actual.columns.values)]
+            actual = pandas.read_csv(filename)
+            expected = expected_dict[streamname][list(actual.columns.values)]
 
-        pandas.testing.assert_frame_equal(actual, expected)
+            pandas.testing.assert_frame_equal(actual, expected)

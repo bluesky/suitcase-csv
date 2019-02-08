@@ -5,7 +5,6 @@
 # know which portions of the suitcase API it supports without calling any
 # functions.
 #
-from collections import defaultdict
 import event_model
 import numpy
 import pandas
@@ -19,7 +18,7 @@ del get_versions
 
 def export(gen, directory, file_prefix='{uid}-', **kwargs):
     """
-    Export a stream of documents to a series of csv files..
+    Export a stream of documents to a series of csv files.
 
     This creates a set of files named:
     ``<directory>/<file_prefix>{stream_name}.csv``
@@ -62,7 +61,7 @@ def export(gen, directory, file_prefix='{uid}-', **kwargs):
         the user.
 
     **kwargs : kwargs
-        kwargs to be passed to ``tifffile.TiffWriter.save``.
+        kwargs to be passed to ``pandas.DataFrame.to_csv``.
 
     Returns
     -------
@@ -140,12 +139,6 @@ class Serializer(event_model.DocumentRouter):
         descriptive value depends on the application and is therefore left to
         the user.
 
-    stack_images : Boolean
-        This indicates if we want one image per file (`stack_images` = `False`)
-        or many images per file (`stack_images` = `True`). If using
-        `stack_images` = `False` then an additional image number is added to
-        the file name.
-
     **kwargs : kwargs
         kwargs to be passed to ``pandas.Dataframe.to_csv``.
     """
@@ -156,10 +149,8 @@ class Serializer(event_model.DocumentRouter):
         else:
             self.manager = directory
 
-        self.artifacts = self.manager._artifacts
         self._streamnames = {}  # maps descriptor uids to stream_names
-        self._files = defaultdict(list)  # maps stream_name to file lists
-        self._filenames = {}  # map stream_name to file names of csv files
+        self._files = {}  # maps stream_name to file lists
         self._file_prefix = file_prefix
         self._templated_file_prefix = ''
         self._start_found = False
@@ -171,6 +162,12 @@ class Serializer(event_model.DocumentRouter):
         kwargs.setdefault('index_label', 'time')
         kwargs.setdefault('mode', 'a')
         self._kwargs = kwargs
+
+    @property
+    def artifacts(self):
+        # The manager's artifacts attribute is itself a property, and we must
+        # access it a new each time to be sure to get the latest content.
+        return self.manager.artifacts
 
     def start(self, doc):
         '''Extracts `start` document information for formatting file_prefix.
@@ -187,7 +184,7 @@ class Serializer(event_model.DocumentRouter):
         # raise an error if this is the second `start` document seen.
         if self._start_found:
             raise RuntimeError(
-                "The serializer in suitcase.tiff expects documents from one "
+                "The serializer in suitcase.csv expects documents from one "
                 "run only. Two `start` documents where sent to it")
         else:
             self._start_found = True
@@ -250,8 +247,8 @@ class Serializer(event_model.DocumentRouter):
                 valid_data[field] = doc['data'][field]
 
         if valid_data:
-
-            event_data = pandas.DataFrame(valid_data, index=doc['time'])
+            event_data = pandas.DataFrame(
+                valid_data, index=doc[self._kwargs['index_label']])
             event_data['seq_num'] = doc['seq_num']
 
             if self._initial_header_kwarg:
