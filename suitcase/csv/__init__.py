@@ -150,7 +150,7 @@ class Serializer(event_model.DocumentRouter):
             self.manager = directory
 
         self._streamnames = {}  # maps descriptor uids to stream_names
-        self._files = {}  # maps stream_name to file lists
+        self._files = {}  # maps stream_name to file
         self._file_prefix = file_prefix
         self._templated_file_prefix = ''
         self._start_found = False
