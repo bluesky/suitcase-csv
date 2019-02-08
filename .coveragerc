@@ -1,0 +1,4 @@
+[run]
+branch = true
+include = suitcase/csv/*
+omit = suitcase/csv/_version.py

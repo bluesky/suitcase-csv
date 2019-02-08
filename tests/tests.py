@@ -1,186 +1,79 @@
-# Tests should generate (and then clean up) any files they need for testing. No
-# binary files should be included in the repository.
-from bluesky.plans import count
-import json
-import tempfile
 from suitcase.csv import export
-import pandas
 import event_model
-from pandas.util.testing import assert_frame_equal
-import numpy as np
+import numpy
+import pandas
 
 
-def generate_csv(fh, num_rows=1, num_columns=1, delimiter=','):
-    """Writes a csv file to the given file handle.
-    """
-    df = pandas.DataFrame(np.random.randn(num_rows, num_columns))
-    df.to_csv(path_or_buf=fh, sep=delimiter)
+def create_expected(collector):
+    '''collects the run data into a `pandas.dataframe` for comparison tests.'''
+    streamnames = {}
+    events_dict = {}
+    expected = {}
+    for name, doc in collector:
+        if name == 'descriptor':
+            streamnames[doc['uid']] = doc.get('name')
+        elif name == 'event':
+            streamname = streamnames[doc['descriptor']]
+            if streamname not in events_dict.keys():
+                events_dict[streamname] = []
+            events_dict[streamname].append(doc)
+        elif name == 'bulk_events':
+            for key, events in doc.items():
+                for event in events:
+                    streamname = streamnames[event['descriptor']]
+                    if streamname not in events_dict.keys():
+                        events_dict[streamname] = []
+                    events_dict[streamname].append(event)
+        elif name == 'event_page':
+            for event in event_model.unpack_event_page(doc):
+                streamname = streamnames[event['descriptor']]
+                if streamname not in events_dict.keys():
+                    events_dict[streamname] = []
+                events_dict[streamname].append(event)
+
+    for streamname, event_list in events_dict.items():
+        expected_dict = {}
+        for event in event_list:
+            for field in event['data']:
+                if numpy.asarray(event['data'][field]).ndim in [1, 0]:
+                    if 'seq_num' not in expected_dict.keys():
+                        expected_dict['seq_num'] = []
+                        expected_dict['time'] = []
+                    if field not in expected_dict.keys():
+                        expected_dict[field] = []
+                    expected_dict[field].append(event['data'][field])
+            if expected_dict:
+                expected_dict['seq_num'].append(event['seq_num'])
+                expected_dict['time'].append(event['time'])
+
+        if expected_dict:
+            expected[streamname] = pandas.DataFrame(expected_dict)
+    return expected
 
 
-def test_export_events(RE, hw):
-    '''Test to see if the suitcase.csv.export works on events.
+def test_export(tmp_path, example_data):
+    ''' runs a test using the `example_data` pytest.fixture.
+
+    Runs a test using the `suitcase.utils.tests.conftest` fixture
+    `example_data`.
+
+    ..note::
+
+        Due to the `example_data` `pytest.fixture` this will run multiple tests
+        each with a range of detectors and a range of event_types. see
+        `suitcase.utils.tests.conftest` for more info
+
     '''
-    collector = []
 
-    def collect(name, doc):
-        collector.append((name, doc))
+    collector = example_data(ignore=[])
+    expected_dict = create_expected(collector)
+    artifacts = export(collector, tmp_path, file_prefix='')
 
-    RE.subscribe(collect)
-    RE(count([hw.det], 5))
+    if 'stream_data' in artifacts.keys():
+        for filename in artifacts['stream_data']:
+            streamname = str(filename).split('/')[-1].split('.')[0]
 
-    with tempfile.NamedTemporaryFile(mode='w') as f:
-        # We don't actually need f itself, just a filepath to template on.
-        meta, *csvs = export(collector, f.name)
-    csv, = csvs
+            actual = pandas.read_csv(filename)
+            expected = expected_dict[streamname][list(actual.columns.values)]
 
-    docs = (doc for name, doc in collector)
-    start, descriptor, *events, stop = docs
-
-    expected = {}
-    expected_dict = {'data': {'det': [], 'seq_num': []}, 'time': []}
-    for event in events:
-        expected_dict['data']['det'].append(event['data']['det'])
-        expected_dict['data']['seq_num'].append(event['seq_num'])
-        expected_dict['time'].append(event['time'])
-
-    expected['events'] = pandas.DataFrame(expected_dict['data'],
-                                          index=expected_dict['time'])
-    expected['events'].index.name = 'time'
-
-    with open(meta) as f:
-        actual = json.load(f)
-    # This next section is used to convert lists to tuples for the assert below
-    for dims in actual['start']['hints']['dimensions']:
-        new_dims = []
-        for dim in dims:
-            if type(dim) is list:
-                new_dims.append(tuple(dim))
-            else:
-                new_dims.append(dim)
-        actual['start']['hints']['dimensions'] = [tuple(new_dims)]
-
-    expected.update({'start': start, 'stop': stop,
-                     'descriptors': {'primary': [descriptor]}})
-    actual['events'] = pandas.read_csv(csv, index_col=0)
-    assert actual.keys() == expected.keys()
-    assert actual['start'] == expected['start']
-    assert actual['descriptors'] == expected['descriptors']
-    assert actual['stop'] == expected['stop']
-    assert_frame_equal(expected['events'], actual['events'])
-
-
-def test_export_bulk_event(RE, hw):
-    '''Test to see if suitcase.csv.export() works on bulk_events
-    '''
-    collector = []
-    events = []
-
-    def collect(name, doc):
-        if name == 'event':
-            events.append(doc)
-        elif name == 'stop':
-            collector.append(('bulk_event', {'primary': events}))
-            collector.append((name, doc))
-        else:
-            collector.append((name, doc))
-
-    RE.subscribe(collect)
-    RE(count([hw.det], 5))
-
-    with tempfile.NamedTemporaryFile(mode='w') as f:
-        # We don't actually need f itself, just a filepath to template on.
-        meta, *csvs = export(collector, f.name)
-    csv, = csvs
-
-    docs = (doc for name, doc in collector)
-    start, descriptor, *bulk_events, stop = docs
-
-    expected = {}
-    expected_dict = {'data': {'det': [], 'seq_num': []}, 'time': []}
-    for event in events:
-        expected_dict['data']['det'].append(event['data']['det'])
-        expected_dict['data']['seq_num'].append(event['seq_num'])
-        expected_dict['time'].append(event['time'])
-
-    expected['events'] = pandas.DataFrame(expected_dict['data'],
-                                          index=expected_dict['time'])
-    expected['events'].index.name = 'time'
-
-    with open(meta) as f:
-        actual = json.load(f)
-    # This next section is used to convert lists to tuples for the assert below
-    for dims in actual['start']['hints']['dimensions']:
-        new_dims = []
-        for dim in dims:
-            if type(dim) is list:
-                new_dims.append(tuple(dim))
-            else:
-                new_dims.append(dim)
-        actual['start']['hints']['dimensions'] = [tuple(new_dims)]
-
-    expected.update({'start': start, 'stop': stop,
-                     'descriptors': {'primary': [descriptor]}})
-    actual['events'] = pandas.read_csv(csv, index_col=0)
-    assert actual.keys() == expected.keys()
-    assert actual['start'] == expected['start']
-    assert actual['descriptors'] == expected['descriptors']
-    assert actual['stop'] == expected['stop']
-    assert_frame_equal(expected['events'], actual['events'])
-
-
-def test_export_event_page(RE, hw):
-    collector = []
-    events = []
-
-    def collect(name, doc):
-        if name == 'event':
-            events.append(doc)
-        elif name == 'stop':
-            collector.append(('event_page',
-                              event_model.pack_event_page(*events)))
-            collector.append((name, doc))
-        else:
-            collector.append((name, doc))
-
-    RE.subscribe(collect)
-    RE(count([hw.det], 5))
-
-    with tempfile.NamedTemporaryFile(mode='w') as f:
-        # We don't actually need f itself, just a filepath to template on.
-        meta, *csvs = export(collector, f.name)
-    csv, = csvs
-
-    docs = (doc for name, doc in collector)
-    start, descriptor, *event_pages, stop = docs
-
-    expected = {}
-    expected_dict = {'data': {'det': [], 'seq_num': []}, 'time': []}
-    for event in events:
-        expected_dict['data']['det'].append(event['data']['det'])
-        expected_dict['data']['seq_num'].append(event['seq_num'])
-        expected_dict['time'].append(event['time'])
-
-    expected['events'] = pandas.DataFrame(expected_dict['data'],
-                                          index=expected_dict['time'])
-    expected['events'].index.name = 'time'
-
-    with open(meta) as f:
-        actual = json.load(f)
-    # This next section is used to convert lists to tuples for the assert below
-    for dims in actual['start']['hints']['dimensions']:
-        new_dims = []
-        for dim in dims:
-            if type(dim) is list:
-                new_dims.append(tuple(dim))
-            else:
-                new_dims.append(dim)
-        actual['start']['hints']['dimensions'] = [tuple(new_dims)]
-
-    expected.update({'start': start, 'stop': stop,
-                     'descriptors': {'primary': [descriptor]}})
-    actual['events'] = pandas.read_csv(csv, index_col=0)
-    assert actual.keys() == expected.keys()
-    assert actual['start'] == expected['start']
-    assert actual['descriptors'] == expected['descriptors']
-    assert actual['stop'] == expected['stop']
-    assert_frame_equal(expected['events'], actual['events'])
+            pandas.testing.assert_frame_equal(actual, expected)
