@@ -145,9 +145,9 @@ class Serializer(event_model.DocumentRouter):
     def __init__(self, directory, file_prefix='{uid}-', **kwargs):
 
         if isinstance(directory, (str, Path)):
-            self.manager = suitcase.utils.MultiFileManager(directory)
+            self._manager = suitcase.utils.MultiFileManager(directory)
         else:
-            self.manager = directory
+            self._manager = directory
 
         self._streamnames = {}  # maps descriptor uids to stream_names
         self._files = {}  # maps stream_name to file
@@ -167,7 +167,7 @@ class Serializer(event_model.DocumentRouter):
     def artifacts(self):
         # The manager's artifacts attribute is itself a property, and we must
         # access it a new each time to be sure to get the latest content.
-        return self.manager.artifacts
+        return self._manager.artifacts
 
     def start(self, doc):
         '''Extracts `start` document information for formatting file_prefix.
@@ -241,7 +241,7 @@ class Serializer(event_model.DocumentRouter):
                 if streamname not in self._files.keys():
                     filename = (f'{self._templated_file_prefix}'
                                 f'{streamname}.csv')
-                    f = self.manager.open('stream_data', filename, 'xt')
+                    f = self._manager.open('stream_data', filename, 'xt')
                     self._files[streamname] = f
                 # add the valid data to the valid_data dict
                 valid_data[field] = doc['data'][field]
@@ -260,4 +260,4 @@ class Serializer(event_model.DocumentRouter):
     def close(self):
         '''Close all of the files opened by this Serializer.
         '''
-        self.manager.close()
+        self._manager.close()
