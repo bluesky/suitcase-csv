@@ -1,10 +1,3 @@
-# Suitcase subpackages must follow strict naming and interface conventions. The
-# public API should include some subset of the following. Any functions not
-# implemented should be omitted, rather than included and made to raise
-# NotImplementError, so that a client importing this library can immediately
-# know which portions of the suitcase API it supports without calling any
-# functions.
-#
 import event_model
 import numpy
 import pandas
@@ -87,12 +80,9 @@ def export(gen, directory, file_prefix='{uid}-', **kwargs):
 
     >>> export(gen, '/path/to/my_usb_stick')
     """
-    serializer = Serializer(directory, file_prefix, **kwargs)
-    try:
+    with Serializer(directory, file_prefix, **kwargs) as serializer:
         for item in gen:
             serializer(*item)
-    finally:
-        serializer.close()
 
     return serializer.artifacts
 
@@ -261,3 +251,9 @@ class Serializer(event_model.DocumentRouter):
         '''Close all of the files opened by this Serializer.
         '''
         self._manager.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exception_details):
+        self.close()
