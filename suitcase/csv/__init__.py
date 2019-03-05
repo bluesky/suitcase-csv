@@ -64,7 +64,7 @@ def export(gen, directory, file_prefix='{uid}-', **kwargs):
     Examples
     --------
 
-    Generate files with unique-identifer names in the current directory.
+    Generate files with unique-identfier names in the current directory.
 
     >>> export(gen, '')
 
@@ -140,7 +140,7 @@ class Serializer(event_model.DocumentRouter):
     Examples
     --------
 
-    Generate files with unique-identifer names in the current directory.
+    Generate files with unique-identfier names in the current directory.
 
     >>> export(gen, '')
 
