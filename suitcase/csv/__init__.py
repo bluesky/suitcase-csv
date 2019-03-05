@@ -42,8 +42,8 @@ def export(gen, directory, file_prefix='{uid}-', **kwargs):
         memory buffer, network socket, or other writable buffer. It should be
         an instance of ``suitcase.utils.MemoryBufferManager`` and
         ``suitcase.utils.MultiFileManager`` or any object implementing that
-        inferface. See the suitcase documentation (LINK ONCE WRITTEN) for
-        details.
+        interface. See the suitcase documentation
+        (http://nsls-ii.github.io/suitcase/) for details.
 
     file_prefix : str, optional
         The first part of the filename of the generated output files. This
@@ -74,7 +74,7 @@ def export(gen, directory, file_prefix='{uid}-', **kwargs):
 
     Include the experiment's start time formatted as YY-MM-DD_HH-MM.
 
-    >>> export(gen, '', '{time:%%Y-%%m-%%d_%%H:%%M}-')
+    >>> export(gen, '', '{time:%Y-%m-%d_%H:%M}-')
 
     Place the files in a different directory, such as on a mounted USB stick.
 
@@ -118,8 +118,8 @@ class Serializer(event_model.DocumentRouter):
         memory buffer, network socket, or other writable buffer. It should be
         an instance of ``suitcase.utils.MemoryBufferManager`` and
         ``suitcase.utils.MultiFileManager`` or any object implementing that
-        inferface. See the suitcase documentation (LINK ONCE WRITTEN) for
-        details.
+        inferface. See the suitcase documentation
+        (http://nsls-ii.github.io/suitcase/) for details.
 
     file_prefix : str, optional
         The first part of the filename of the generated output files. This
@@ -131,6 +131,30 @@ class Serializer(event_model.DocumentRouter):
 
     **kwargs : kwargs
         kwargs to be passed to ``pandas.Dataframe.to_csv``.
+
+    Returns
+    -------
+    dest : dict
+        dict mapping the 'labels' to lists of file names
+
+    Examples
+    --------
+
+    Generate files with unique-identifer names in the current directory.
+
+    >>> export(gen, '')
+
+    Generate files with more readable metadata in the file names.
+
+    >>> export(gen, '', '{plan_name}-{motors}-')
+
+    Include the experiment's start time formatted as YY-MM-DD_HH-MM.
+
+    >>> export(gen, '', '{time:%Y-%m-%d_%H:%M}-')
+
+    Place the files in a different directory, such as on a mounted USB stick.
+
+    >>> export(gen, '/path/to/my_usb_stick')
     """
     def __init__(self, directory, file_prefix='{uid}-', **kwargs):
 
