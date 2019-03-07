@@ -133,11 +133,6 @@ class Serializer(event_model.DocumentRouter):
     **kwargs : kwargs
         kwargs to be passed to ``pandas.Dataframe.to_csv``.
 
-    Returns
-    -------
-    dest : dict
-        dict mapping the 'labels' to lists of file names
-
     Examples
     --------
 
