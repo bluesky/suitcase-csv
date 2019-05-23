@@ -269,7 +269,7 @@ class Serializer(event_model.DocumentRouter):
             event_data.to_csv(self._files[streamname], **self._kwargs)
             self._has_header.add(streamname)
 
-    def stop(self, doc)
+    def stop(self, doc):
         self.close()
 
     def close(self):
