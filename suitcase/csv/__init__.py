@@ -9,7 +9,7 @@ __version__ = get_versions()['version']
 del get_versions
 
 
-def export(gen, directory, file_prefix='{uid}-', **kwargs):
+def export(gen, directory, file_prefix='{start[uid]}-', **kwargs):
     """
     Export a stream of documents to a series of csv files.
 
@@ -47,9 +47,10 @@ def export(gen, directory, file_prefix='{uid}-', **kwargs):
 
     file_prefix : str, optional
         The first part of the filename of the generated output files. This
-        string may include templates as in ``{proposal_id}-{sample_name}-``,
+        string may include templates as in
+        ``{start[proposal_id]}-{start[sample_name]}-``,
         which are populated from the RunStart document. The default value is
-        ``{uid}-`` which is guaranteed to be present and unique. A more
+        ``{start[uid]}-`` which is guaranteed to be present and unique. A more
         descriptive value depends on the application and is therefore left to
         the user.
 
@@ -71,11 +72,11 @@ def export(gen, directory, file_prefix='{uid}-', **kwargs):
 
     Generate files with more readable metadata in the file names.
 
-    >>> export(gen, '', '{plan_name}-{motors}-')
+    >>> export(gen, '', '{start[plan_name]}-{start[motors]}-')
 
     Include the experiment's start time formatted as YYYY-MM-DD_HH-MM.
 
-    >>> export(gen, '', '{time:%Y-%m-%d_%H:%M}-')
+    >>> export(gen, '', '{start[time]:%Y-%m-%d_%H:%M}-')
 
     Place the files in a different directory, such as on a mounted USB stick.
 
@@ -124,9 +125,10 @@ class Serializer(event_model.DocumentRouter):
 
     file_prefix : str, optional
         The first part of the filename of the generated output files. This
-        string may include templates as in ``{proposal_id}-{sample_name}-``,
+        string may include templates as in
+        ``{start[proposal_id]}-{start[sample_name]}-``,
         which are populated from the RunStart document. The default value is
-        ``{uid}-`` which is guaranteed to be present and unique. A more
+        ``{start[uid]}-`` which is guaranteed to be present and unique. A more
         descriptive value depends on the application and is therefore left to
         the user.
 
@@ -142,17 +144,17 @@ class Serializer(event_model.DocumentRouter):
 
     Generate files with more readable metadata in the file names.
 
-    >>> export(gen, '', '{plan_name}-{motors}-')
+    >>> export(gen, '', '{start[plan_name]}-{start[motors]}-')
 
     Include the experiment's start time formatted as YYYY-MM-DD_HH-MM.
 
-    >>> export(gen, '', '{time:%Y-%m-%d_%H:%M}-')
+    >>> export(gen, '', '{start[time]:%Y-%m-%d_%H:%M}-')
 
     Place the files in a different directory, such as on a mounted USB stick.
 
     >>> export(gen, '/path/to/my_usb_stick')
     """
-    def __init__(self, directory, file_prefix='{uid}-', **kwargs):
+    def __init__(self, directory, file_prefix='{start[uid]}-', **kwargs):
 
         if isinstance(directory, (str, Path)):
             self._manager = suitcase.utils.MultiFileManager(directory)
@@ -200,7 +202,7 @@ class Serializer(event_model.DocumentRouter):
             self._start_found = True
 
         # format self._file_prefix
-        self._templated_file_prefix = self._file_prefix.format(**doc)
+        self._templated_file_prefix = self._file_prefix.format(start=doc)
 
     def descriptor(self, doc):
         '''Use `descriptor` doc to map stream_names to descriptor uid's.
@@ -266,6 +268,9 @@ class Serializer(event_model.DocumentRouter):
 
             event_data.to_csv(self._files[streamname], **self._kwargs)
             self._has_header.add(streamname)
+
+    def stop(self, doc):
+        self.close()
 
     def close(self):
         '''Close all of the files opened by this Serializer.
