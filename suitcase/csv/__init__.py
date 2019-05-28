@@ -132,6 +132,11 @@ class Serializer(event_model.DocumentRouter):
         descriptive value depends on the application and is therefore left to
         the user.
 
+    flush : boolean
+        Flush the file to disk after each document. As a consequence, writing
+        the full document stream is slower but each document is immediately
+        available for reading. False by default.
+
     **kwargs : kwargs
         kwargs to be passed to ``pandas.Dataframe.to_csv``.
 
@@ -154,7 +159,8 @@ class Serializer(event_model.DocumentRouter):
 
     >>> export(gen, '/path/to/my_usb_stick')
     """
-    def __init__(self, directory, file_prefix='{start[uid]}-', **kwargs):
+    def __init__(self, directory, file_prefix='{start[uid]}-', flush=False,
+                 **kwargs):
 
         if isinstance(directory, (str, Path)):
             self._manager = suitcase.utils.MultiFileManager(directory)
@@ -173,6 +179,7 @@ class Serializer(event_model.DocumentRouter):
         self._initial_header_kwarg = kwargs['header']  # to set the headers
         kwargs.setdefault('index_label', 'time')
         kwargs.setdefault('mode', 'a')
+        self._flush = flush
         self._kwargs = kwargs
 
     @property
@@ -266,7 +273,10 @@ class Serializer(event_model.DocumentRouter):
             if self._initial_header_kwarg:
                 self._kwargs['header'] = streamname not in self._has_header
 
-            event_data.to_csv(self._files[streamname], **self._kwargs)
+            file = self._files[streamname]
+            event_data.to_csv(file, **self._kwargs)
+            if self._flush:
+                file.flush()
             self._has_header.add(streamname)
 
     def stop(self, doc):
