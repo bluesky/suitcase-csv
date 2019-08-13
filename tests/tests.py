@@ -65,7 +65,7 @@ def test_export(tmp_path, example_data):
 
     '''
 
-    collector = example_data(ignore=[])
+    collector = example_data(skip_tests_with=[])
     expected_dict = create_expected(collector)
     artifacts = export(collector, tmp_path, file_prefix='')
 
