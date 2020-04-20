@@ -10,8 +10,8 @@ pip install suitcase-csv
 
 ## Quick Start
 
-Examples could be found [here](http://nsls-ii.github.io/suitcase/usage.html#).
+Examples could be found [here](https://blueskyproject.io/suitcase/usage.html).
 
 ## Documentation
 
-See the [suitcase documentation](https://nsls-ii.github.io/suitcase).
+See the [suitcase documentation](https://blueskyproject.io/suitcase).
