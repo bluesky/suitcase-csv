@@ -255,7 +255,8 @@ class Serializer(event_model.DocumentRouter):
         valid_data = {}
         for field in doc['data']:
             # check that the data is 1D, if not ignore it
-            if numpy.asarray(doc['data'][field]).ndim == 1:
+            # if numpy.asarray(doc['data'][field]).ndim == 1:
+            if True:
                 # create a file for this stream and field if required
                 if streamname not in self._files.keys():
                     filename = (f'{self._templated_file_prefix}'
@@ -263,12 +264,15 @@ class Serializer(event_model.DocumentRouter):
                     f = self._manager.open('stream_data', filename, 'xt')
                     self._files[streamname] = f
                 # add the valid data to the valid_data dict
-                valid_data[field] = doc['data'][field]
+                if field in ['amptek_energy_channels', 'amptek_mca_spectrum']:
+                    valid_data[field] = doc['data'][field]
+                # print(f'!!! valid_data: {valid_data}')
 
         if valid_data:
-            event_data = pandas.DataFrame(
-                valid_data, index=doc[self._kwargs['index_label']])
-            event_data['seq_num'] = doc['seq_num']
+            col_x = valid_data['amptek_energy_channels']
+            col_y = valid_data['amptek_mca_spectrum']
+            data = numpy.vstack((col_x, col_y)).T
+            event_data = pandas.DataFrame(data, columns=['amptek_energy_channels', 'amptek_mca_spectrum'])
 
             if self._initial_header_kwarg:
                 self._kwargs['header'] = streamname not in self._has_header
