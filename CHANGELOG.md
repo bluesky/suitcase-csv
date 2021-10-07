@@ -1,5 +1,10 @@
 # suitcase-csv changes
 
+## v0.3.0 (2021-10-08)
+
+- Stop using special ophyd branch in test requirements
+- Updates to documentation
+
 ## v0.2.1 (2019-08-16)
 
 ## v0.2.0 (2019-05-28)
