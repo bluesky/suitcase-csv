@@ -181,6 +181,7 @@ class Serializer(event_model.DocumentRouter):
         kwargs.setdefault('mode', 'a')
         self._flush = flush
         self._kwargs = kwargs
+        self._closed = False
 
     @property
     def artifacts(self):
@@ -285,7 +286,9 @@ class Serializer(event_model.DocumentRouter):
     def close(self):
         '''Close all of the files opened by this Serializer.
         '''
-        self._manager.close()
+        if not self._closed:
+            self._closed = True
+            self._manager.close()
 
     def __enter__(self):
         return self
